@@ -1,23 +1,20 @@
-CREATE TYPE "public"."application_status" AS ENUM('applied', 'under_review', 'interview_scheduled', 'interviewed', 'rejected', 'accepted', 'withdrawn');--> statement-breakpoint
-CREATE TYPE "public"."experience_level" AS ENUM('entry_level', 'mid_level', 'senior_level', 'executive');--> statement-breakpoint
-CREATE TYPE "public"."job_type" AS ENUM('full_time', 'part_time', 'contract', 'internship', 'freelance');--> statement-breakpoint
 CREATE TABLE "applicant_skills" (
-	"applicant_skill_id" uuid PRIMARY KEY NOT NULL,
+	"applicant_skill_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"applicant_id" uuid NOT NULL,
 	"skill_id" uuid NOT NULL,
 	"proficiency_level" varchar(20),
-	"years_of_experience" numeric(3, 1)
+	"years_of_experience" integer
 );
 --> statement-breakpoint
 CREATE TABLE "applicants" (
-	"applicant_id" uuid PRIMARY KEY NOT NULL,
+	"applicant_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid,
 	"full_name" varchar(100) NOT NULL,
 	"phone_number" varchar(20),
 	"date_of_birth" date,
 	"gender" varchar(20),
 	"current_location" varchar(100),
-	"years_of_experience" numeric(3, 1),
+	"years_of_experience" integer,
 	"resume_url" varchar(255),
 	"linkedin_url" varchar(255),
 	"github_url" varchar(255),
@@ -45,13 +42,13 @@ CREATE TABLE "companies" (
 );
 --> statement-breakpoint
 CREATE TABLE "company_roles" (
-	"role_id" uuid PRIMARY KEY NOT NULL,
+	"role_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(50) NOT NULL,
 	CONSTRAINT "company_roles_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
 CREATE TABLE "company_users" (
-	"company_user_id" uuid PRIMARY KEY NOT NULL,
+	"company_user_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid,
 	"company_id" uuid,
 	"role_id" uuid
@@ -68,7 +65,7 @@ CREATE TABLE "employers" (
 );
 --> statement-breakpoint
 CREATE TABLE "interviews" (
-	"interview_id" uuid PRIMARY KEY NOT NULL,
+	"interview_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"application_id" uuid NOT NULL,
 	"interviewer_id" uuid,
 	"scheduled_at" timestamp NOT NULL,
@@ -83,19 +80,19 @@ CREATE TABLE "interviews" (
 );
 --> statement-breakpoint
 CREATE TABLE "job_applications" (
-	"application_id" uuid PRIMARY KEY NOT NULL,
+	"application_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"job_id" uuid NOT NULL,
 	"applicant_id" uuid NOT NULL,
 	"cover_letter" text,
 	"resume_url" varchar(255),
-	"status" "application_status" DEFAULT 'applied' NOT NULL,
+	"status" varchar(255) DEFAULT 'applied' NOT NULL,
 	"notes" text,
 	"applied_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "job_categories" (
-	"category_id" uuid PRIMARY KEY NOT NULL,
+	"category_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(100) NOT NULL,
 	"description" text,
 	"created_at" timestamp DEFAULT now(),
@@ -103,7 +100,7 @@ CREATE TABLE "job_categories" (
 );
 --> statement-breakpoint
 CREATE TABLE "job_skills" (
-	"job_skill_id" uuid PRIMARY KEY NOT NULL,
+	"job_skill_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"job_id" uuid NOT NULL,
 	"skill_id" uuid NOT NULL,
 	"is_required" boolean DEFAULT true,
@@ -111,7 +108,7 @@ CREATE TABLE "job_skills" (
 );
 --> statement-breakpoint
 CREATE TABLE "jobs" (
-	"job_id" uuid PRIMARY KEY NOT NULL,
+	"job_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"company_id" uuid NOT NULL,
 	"employer_id" uuid NOT NULL,
 	"title" varchar(255) NOT NULL,
@@ -119,10 +116,10 @@ CREATE TABLE "jobs" (
 	"requirements" text,
 	"responsibilities" text,
 	"category_id" uuid,
-	"job_type" "job_type" NOT NULL,
-	"experience_level" "experience_level" NOT NULL,
-	"salary_min" numeric(10, 2),
-	"salary_max" numeric(10, 2),
+	"job_type" varchar(255) NOT NULL,
+	"experience_level" varchar(255) NOT NULL,
+	"salary_min" integer,
+	"salary_max" integer,
 	"salary_currency" varchar(3) DEFAULT 'USD',
 	"location" varchar(255),
 	"remote_work_allowed" boolean DEFAULT false,
@@ -136,7 +133,7 @@ CREATE TABLE "jobs" (
 );
 --> statement-breakpoint
 CREATE TABLE "password_reset_tokens" (
-	"token_id" uuid PRIMARY KEY NOT NULL,
+	"token_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid,
 	"token" varchar(255) NOT NULL,
 	"expires_at" timestamp NOT NULL,
@@ -152,14 +149,14 @@ CREATE TABLE "roles" (
 );
 --> statement-breakpoint
 CREATE TABLE "saved_jobs" (
-	"saved_job_id" uuid PRIMARY KEY NOT NULL,
+	"saved_job_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"applicant_id" uuid NOT NULL,
 	"job_id" uuid NOT NULL,
 	"saved_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "skills" (
-	"skill_id" uuid PRIMARY KEY NOT NULL,
+	"skill_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(100) NOT NULL,
 	"category" varchar(50),
 	"created_at" timestamp DEFAULT now(),
@@ -171,10 +168,21 @@ CREATE TABLE "users" (
 	"email" varchar(255) NOT NULL,
 	"password_hash" varchar(255) NOT NULL,
 	"role_id" uuid NOT NULL,
-	"is_active" boolean DEFAULT true NOT NULL,
+	"is_verified" boolean DEFAULT false NOT NULL,
+	"status" varchar(255) DEFAULT 'active' NOT NULL,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now(),
 	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "verification_codes" (
+	"code_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid,
+	"type" varchar(255) NOT NULL,
+	"code" varchar(255) NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now(),
+	CONSTRAINT "verification_codes_code_unique" UNIQUE("code")
 );
 --> statement-breakpoint
 ALTER TABLE "applicant_skills" ADD CONSTRAINT "applicant_skills_applicant_id_applicants_applicant_id_fk" FOREIGN KEY ("applicant_id") REFERENCES "public"."applicants"("applicant_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -197,4 +205,5 @@ ALTER TABLE "jobs" ADD CONSTRAINT "jobs_category_id_job_categories_category_id_f
 ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_user_id_users_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "saved_jobs" ADD CONSTRAINT "saved_jobs_applicant_id_applicants_applicant_id_fk" FOREIGN KEY ("applicant_id") REFERENCES "public"."applicants"("applicant_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "saved_jobs" ADD CONSTRAINT "saved_jobs_job_id_jobs_job_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("job_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "users" ADD CONSTRAINT "users_role_id_roles_role_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("role_id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "users" ADD CONSTRAINT "users_role_id_roles_role_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("role_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "verification_codes" ADD CONSTRAINT "verification_codes_user_id_users_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE no action ON UPDATE no action;

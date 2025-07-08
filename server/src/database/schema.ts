@@ -1,108 +1,120 @@
+import { text } from "drizzle-orm/pg-core";
+import { date } from "drizzle-orm/pg-core";
+import { integer } from "drizzle-orm/pg-core";
 import {
   pgTable,
-  varchar,
-  text,
-  timestamp,
-  integer,
-  boolean,
-  date,
-  decimal,
   pgEnum,
+  varchar,
+  boolean,
+  timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
-import { uuid } from "drizzle-orm/pg-core";
 
-// Enums
-export const applicationStatusEnum = pgEnum("application_status", [
-  "applied",
-  "under_review",
-  "interview_scheduled",
-  "interviewed",
-  "rejected",
-  "accepted",
-  "withdrawn",
-]);
+// // Enums
+// export const applicationStatusEnum = pgEnum("application_status", [
+//   "applied",
+//   "under_review",
+//   "interview_scheduled",
+//   "interviewed",
+//   "rejected",
+//   "accepted",
+//   "withdrawn",
+// ]);
 
-export const jobTypeEnum = pgEnum("job_type", [
-  "full_time",
-  "part_time",
-  "contract",
-  "internship",
-  "freelance",
-]);
+// export const jobTypeEnum = pgEnum("job_type", [
+//   "full_time",
+//   "part_time",
+//   "contract",
+//   "internship",
+//   "freelance",
+// ]);
 
-export const experienceLevelEnum = pgEnum("experience_level", [
-  "entry_level",
-  "mid_level",
-  "senior_level",
-  "executive",
-]);
+// export const experienceLevelEnum = pgEnum("experience_level", [
+//   "entry_level",
+//   "mid_level",
+//   "senior_level",
+//   "executive",
+// ]);
 
-export const roles = pgTable("roles", (t) => ({
-  role_id: t.uuid("role_id").primaryKey().defaultRandom(),
-  name: t.varchar("name", { length: 50 }).unique().notNull(),
-}));
+// export const userStatusEnum = pgEnum("status", [
+//   "blocked",
+//   "active",
+//   "deleted",
+// ]);
 
-export const users = pgTable("users", (t) => ({
-  user_id: t.uuid("user_id").primaryKey().defaultRandom(),
-  email: t.varchar("email", { length: 255 }).notNull().unique(),
-  password_hash: t.varchar("password_hash", { length: 255 }).notNull(),
-  role_id: t
-    .uuid("role_id")
+export const sessions = pgTable("sessions", {
+  session_id: uuid("session_id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").references(() => users.user_id),
+  user_agent: varchar("user_agent", { length: 255 }).notNull(),
+  expires_at: timestamp("expires_at").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const roles = pgTable("roles", {
+  role_id: uuid("role_id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 50 }).unique().notNull(),
+});
+
+export const users = pgTable("users", {
+  user_id: uuid("user_id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  password_hash: varchar("password_hash", { length: 255 }).notNull(),
+  role_id: uuid("role_id")
     .references(() => roles.role_id)
     .notNull(),
-  is_active: t.boolean("is_active").notNull().default(true),
-  createdAt: t.timestamp("created_at").defaultNow(),
-  updatedAt: t.timestamp("updated_at").defaultNow(),
-}));
+  is_verified: boolean("is_verified").notNull().default(false),
+  is_mfa_enabled: boolean("is_mfa_enabled").notNull().default(false),
+  status: varchar("status", { length: 255 }).notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
-export const verification_codes = pgTable("verification_codes", (t) => ({
-  code_id: t.uuid("code_id").primaryKey().defaultRandom(),
-  user_id: t.uuid("user_id").references(() => users.user_id),
-  code: t.varchar("code", { length: 255 }).notNull().unique(),
-  expires_at: t.timestamp("expires_at").notNull(),
-  created_at: t.timestamp("created_at").defaultNow(),
-}));
+export const verification_codes = pgTable("verification_codes", {
+  code_id: uuid("code_id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").references(() => users.user_id),
+  type: varchar("type", { length: 255 }).notNull(),
+  code: varchar("code", { length: 255 }).notNull().unique(),
+  expires_at: timestamp("expires_at").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
 
-export const companies = pgTable("companies", (t) => ({
-  company_id: t.uuid("company_id").primaryKey().defaultRandom(),
-  name: t.varchar("name", { length: 255 }).notNull(),
-  website: t.varchar("website", { length: 255 }),
-  industry: t.varchar("industry", { length: 100 }),
-  size: t.integer("size"),
-  address: t.text("address"),
-  city: t.varchar("city", { length: 100 }),
-  state: t.varchar("state", { length: 100 }),
-  country: t.varchar("country", { length: 100 }),
-  gst_number: t.varchar("gst_number", { length: 50 }),
-  logo_url: t.varchar("logo_url", { length: 255 }),
-  description: t.text("description"),
-  founded_year: t.integer("founded_year"),
-  created_at: t.timestamp("created_at").defaultNow(),
-  updated_at: t.timestamp("updated_at").defaultNow(),
-}));
+export const companies = pgTable("companies", {
+  company_id: uuid("company_id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  website: varchar("website", { length: 255 }),
+  industry: varchar("industry", { length: 100 }),
+  size: integer("size"),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+  country: varchar("country", { length: 100 }),
+  gst_number: varchar("gst_number", { length: 50 }),
+  logo_url: varchar("logo_url", { length: 255 }),
+  description: text("description"),
+  founded_year: integer("founded_year"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
 
-export const employers = pgTable("employers", (t) => ({
-  employer_id: t.uuid("employer_id").primaryKey().defaultRandom(),
-  user_id: t.uuid("user_id").references(() => users.user_id),
-  company_id: t.uuid("company_id").references(() => companies.company_id),
-  full_name: t.varchar("full_name", { length: 100 }).notNull(),
-  phone_number: t.varchar("phone_number", { length: 20 }),
-  job_title: t.varchar("job_title", { length: 100 }),
-  created_at: t.timestamp("created_at").defaultNow(),
-}));
+export const employers = pgTable("employers", {
+  employer_id: uuid("employer_id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").references(() => users.user_id),
+  company_id: uuid("company_id").references(() => companies.company_id),
+  full_name: varchar("full_name", { length: 100 }).notNull(),
+  phone_number: varchar("phone_number", { length: 20 }),
+  job_title: varchar("job_title", { length: 100 }),
+  created_at: timestamp("created_at").defaultNow(),
+});
 
 export const applicants = pgTable("applicants", {
-  applicant_id: uuid("applicant_id").primaryKey(),
+  applicant_id: uuid("applicant_id").primaryKey().defaultRandom(),
   user_id: uuid("user_id").references(() => users.user_id),
   full_name: varchar("full_name", { length: 100 }).notNull(),
   phone_number: varchar("phone_number", { length: 20 }),
   date_of_birth: date("date_of_birth"),
   gender: varchar("gender", { length: 20 }),
   current_location: varchar("current_location", { length: 100 }),
-  years_of_experience: decimal("years_of_experience", {
-    precision: 3,
-    scale: 1,
-  }),
+  years_of_experience: integer("years_of_experience"),
   resume_url: varchar("resume_url", { length: 255 }),
   linkedin_url: varchar("linkedin_url", { length: 255 }),
   github_url: varchar("github_url", { length: 255 }),
@@ -112,7 +124,7 @@ export const applicants = pgTable("applicants", {
 });
 
 export const password_reset_tokens = pgTable("password_reset_tokens", {
-  token_id: uuid("token_id").primaryKey(),
+  token_id: uuid("token_id").primaryKey().defaultRandom(),
   user_id: uuid("user_id").references(() => users.user_id),
   token: varchar("token", { length: 255 }).notNull().unique(),
   expires_at: timestamp("expires_at").notNull(),
@@ -121,12 +133,12 @@ export const password_reset_tokens = pgTable("password_reset_tokens", {
 });
 
 export const company_roles = pgTable("company_roles", {
-  role_id: uuid("role_id").primaryKey(),
+  role_id: uuid("role_id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 50 }).notNull().unique(),
 });
 
 export const company_users = pgTable("company_users", {
-  company_user_id: uuid("company_user_id").primaryKey(),
+  company_user_id: uuid("company_user_id").primaryKey().defaultRandom(),
   user_id: uuid("user_id").references(() => users.user_id),
   company_id: uuid("company_id").references(() => companies.company_id),
   role_id: uuid("role_id").references(() => company_roles.role_id),
@@ -134,7 +146,7 @@ export const company_users = pgTable("company_users", {
 
 // Job Categories
 export const job_categories = pgTable("job_categories", {
-  category_id: uuid("category_id").primaryKey(),
+  category_id: uuid("category_id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   description: text("description"),
   created_at: timestamp("created_at").defaultNow(),
@@ -142,7 +154,7 @@ export const job_categories = pgTable("job_categories", {
 
 // Skills
 export const skills = pgTable("skills", {
-  skill_id: uuid("skill_id").primaryKey(),
+  skill_id: uuid("skill_id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   category: varchar("category", { length: 50 }), // e.g., "Programming", "Design", "Marketing"
   created_at: timestamp("created_at").defaultNow(),
@@ -150,7 +162,7 @@ export const skills = pgTable("skills", {
 
 // Jobs (Job Postings) - THE MOST IMPORTANT MISSING TABLE
 export const jobs = pgTable("jobs", {
-  job_id: uuid("job_id").primaryKey(),
+  job_id: uuid("job_id").primaryKey().defaultRandom(),
   company_id: uuid("company_id")
     .references(() => companies.company_id)
     .notNull(),
@@ -162,10 +174,10 @@ export const jobs = pgTable("jobs", {
   requirements: text("requirements"),
   responsibilities: text("responsibilities"),
   category_id: uuid("category_id").references(() => job_categories.category_id),
-  job_type: jobTypeEnum("job_type").notNull(),
-  experience_level: experienceLevelEnum("experience_level").notNull(),
-  salary_min: decimal("salary_min", { precision: 10, scale: 2 }),
-  salary_max: decimal("salary_max", { precision: 10, scale: 2 }),
+  job_type: varchar("job_type", { length: 255 }).notNull(),
+  experience_level: varchar("experience_level", { length: 255 }).notNull(),
+  salary_min: integer("salary_min"),
+  salary_max: integer("salary_max"),
   salary_currency: varchar("salary_currency", { length: 3 }).default("USD"),
   location: varchar("location", { length: 255 }),
   remote_work_allowed: boolean("remote_work_allowed").default(false),
@@ -180,7 +192,7 @@ export const jobs = pgTable("jobs", {
 
 // Job Skills (Many-to-Many)
 export const job_skills = pgTable("job_skills", {
-  job_skill_id: uuid("job_skill_id").primaryKey(),
+  job_skill_id: uuid("job_skill_id").primaryKey().defaultRandom(),
   job_id: uuid("job_id")
     .references(() => jobs.job_id)
     .notNull(),
@@ -193,7 +205,7 @@ export const job_skills = pgTable("job_skills", {
 
 // Applicant Skills (Many-to-Many)
 export const applicant_skills = pgTable("applicant_skills", {
-  applicant_skill_id: uuid("applicant_skill_id").primaryKey(),
+  applicant_skill_id: uuid("applicant_skill_id").primaryKey().defaultRandom(),
   applicant_id: uuid("applicant_id")
     .references(() => applicants.applicant_id)
     .notNull(),
@@ -201,15 +213,12 @@ export const applicant_skills = pgTable("applicant_skills", {
     .references(() => skills.skill_id)
     .notNull(),
   proficiency_level: varchar("proficiency_level", { length: 20 }),
-  years_of_experience: decimal("years_of_experience", {
-    precision: 3,
-    scale: 1,
-  }),
+  years_of_experience: integer("years_of_experience"),
 });
 
 // Job Applications
 export const job_applications = pgTable("job_applications", {
-  application_id: uuid("application_id").primaryKey(),
+  application_id: uuid("application_id").primaryKey().defaultRandom(),
   job_id: uuid("job_id")
     .references(() => jobs.job_id)
     .notNull(),
@@ -218,7 +227,7 @@ export const job_applications = pgTable("job_applications", {
     .notNull(),
   cover_letter: text("cover_letter"),
   resume_url: varchar("resume_url", { length: 255 }),
-  status: applicationStatusEnum("status").notNull().default("applied"),
+  status: varchar("status", { length: 255 }).notNull().default("applied"),
   notes: text("notes"), // Internal notes from recruiters
   applied_at: timestamp("applied_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
@@ -226,7 +235,7 @@ export const job_applications = pgTable("job_applications", {
 
 // Saved Jobs (Bookmarks)
 export const saved_jobs = pgTable("saved_jobs", {
-  saved_job_id: uuid("saved_job_id").primaryKey(),
+  saved_job_id: uuid("saved_job_id").primaryKey().defaultRandom(),
   applicant_id: uuid("applicant_id")
     .references(() => applicants.applicant_id)
     .notNull(),
@@ -238,7 +247,7 @@ export const saved_jobs = pgTable("saved_jobs", {
 
 // Interviews
 export const interviews = pgTable("interviews", {
-  interview_id: uuid("interview_id").primaryKey(),
+  interview_id: uuid("interview_id").primaryKey().defaultRandom(),
   application_id: uuid("application_id")
     .references(() => job_applications.application_id)
     .notNull(),

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "is_mfa_enabled" boolean DEFAULT false NOT NULL;
