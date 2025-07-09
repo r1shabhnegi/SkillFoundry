@@ -7,7 +7,7 @@ const authRouter = Router();
 
 // Mutation Routes
 authRouter.post(
-  "/applicant-register",
+  "/applicant-registration",
   authMutationController.applicantRegister
 );
 authRouter.post("/verify-email", authMutationController.verifyEmail);
