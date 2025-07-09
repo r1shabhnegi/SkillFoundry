@@ -64,6 +64,7 @@ export const users = pgTable("users", {
     .notNull(),
   is_verified: boolean("is_verified").notNull().default(false),
   is_mfa_enabled: boolean("is_mfa_enabled").notNull().default(false),
+  mfa_secret: varchar("mfa_secret", { length: 255 }),
   status: varchar("status", { length: 255 }).notNull().default("active"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

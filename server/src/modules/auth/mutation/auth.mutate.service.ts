@@ -3,6 +3,7 @@ import { db } from "../../../database/db";
 import {
   roles,
   sessions,
+  User,
   users,
   verification_codes,
 } from "../../../database/schema";
@@ -30,6 +31,7 @@ import {
   signJwtToken,
   verifyJwtToken,
 } from "../../../common/utils/jwt";
+import speakeasy from "speakeasy";
 
 const applicantRegister = async (data: RegisterType) => {
   const { email, password } = data;
@@ -202,65 +204,6 @@ const applicantLogin = async (data: LoginType, userAgent: string) => {
   };
 };
 
-const refreshToken = async (refreshToken: string) => {
-  const { payload } = verifyJwtToken(refreshToken, {
-    secret: refreshTokenSignOptions.secret,
-  });
-
-  if (!payload) {
-    throw new Error("Invalid refresh token");
-  }
-
-  const findSession = await db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.session_id, payload.session_id))
-    .limit(1);
-
-  if (findSession.length === 0) {
-    throw new Error("Session not found");
-  }
-
-  const findSessionData = findSession[0];
-  const now = Date.now();
-
-  if (findSessionData.expires_at.getTime() <= now) {
-    throw new Error("Session expired");
-  }
-
-  const sessionRequireRefresh =
-    findSessionData.expires_at.getTime() - now <= ONE_DAY_IN_MS;
-
-  if (sessionRequireRefresh) {
-    const newExpiresAt = calculateExpirationDate(
-      appConfig.JWT.REFRESH_EXPIRES_IN
-    );
-    await db
-      .update(sessions)
-      .set({ expires_at: newExpiresAt })
-      .where(eq(sessions.session_id, findSessionData.session_id));
-  }
-
-  const newRefreshToken = sessionRequireRefresh
-    ? signJwtToken(
-        {
-          session_id: findSessionData.session_id,
-        },
-        refreshTokenSignOptions
-      )
-    : undefined;
-
-  const accessToken = signJwtToken({
-    user_id: findSessionData.user_id || "",
-    session_id: findSessionData.session_id,
-  });
-
-  return {
-    accessToken,
-    newRefreshToken,
-  };
-};
-
 const forgotPassword = async (email: string) => {
   const existingUser = await db
     .select()
@@ -371,12 +314,136 @@ const logout = async (sessionId: string) => {
   return await db.delete(sessions).where(eq(sessions.session_id, sessionId));
 };
 
+const verifyMFASetup = async (user: User, code: string, secretKey: string) => {
+  if (!user) {
+    throw new Error("User not authorized");
+  }
+
+  if (user.is_mfa_enabled) {
+    return {
+      message: "MFA is already enabled",
+      userPreferences: {
+        is_mfa_enabled: user.is_mfa_enabled,
+      },
+    };
+  }
+
+  const isValid = speakeasy.totp.verify({
+    secret: secretKey,
+    encoding: "base32",
+    token: code,
+  });
+
+  if (!isValid) {
+    throw new Error("Invalid MFA code. Please try again.");
+  }
+
+  await db
+    .update(users)
+    .set({ is_mfa_enabled: true })
+    .where(eq(users.user_id, user.user_id));
+
+  return {
+    message: "MFA setup completed successfully",
+    userPreferences: {
+      is_mfa_enabled: user.is_mfa_enabled,
+    },
+  };
+};
+
+const revokeMFA = async (user: User) => {
+  if (!user) {
+    throw new Error("User not authorized");
+  }
+
+  if (!user.is_mfa_enabled) {
+    return {
+      message: "MFA is not enabled",
+      userPreferences: {
+        is_mfa_enabled: user.is_mfa_enabled,
+      },
+    };
+  }
+
+  await db
+    .update(users)
+    .set({ is_mfa_enabled: false, mfa_secret: null })
+    .where(eq(users.user_id, user.user_id));
+
+  return {
+    message: "MFA revoke successfully",
+    userPreferences: {
+      is_mfa_enabled: user.is_mfa_enabled,
+    },
+  };
+};
+
+const verifyMFAForLogin = async (
+  code: string,
+  email: string,
+  userAgent?: string
+) => {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!user.is_mfa_enabled && !user.mfa_secret) {
+    throw new Error("MFA not enabled for this user");
+  }
+
+  const isValid = speakeasy.totp.verify({
+    secret: user.mfa_secret!,
+    encoding: "base32",
+    token: code,
+  });
+
+  if (!isValid) {
+    throw new Error("Invalid MFA code. Please try again.");
+  }
+
+  //sign access token & refresh token
+  const [session] = await db
+    .insert(sessions)
+    .values({
+      user_id: user.user_id,
+      user_agent: userAgent || "",
+      expires_at: thirtyDaysFromNow(),
+    })
+    .returning({ session_id: sessions.session_id });
+
+  const accessToken = signJwtToken({
+    user_id: user.user_id,
+    session_id: session.session_id,
+  });
+
+  const refreshToken = signJwtToken(
+    {
+      session_id: session.session_id,
+    },
+    refreshTokenSignOptions
+  );
+
+  return {
+    user,
+    accessToken,
+    refreshToken,
+  };
+};
+
 export {
   applicantRegister,
   verifyEmail,
   applicantLogin,
-  refreshToken,
   forgotPassword,
   resetPassword,
   logout,
+  verifyMFASetup,
+  revokeMFA,
+  verifyMFAForLogin,
 };

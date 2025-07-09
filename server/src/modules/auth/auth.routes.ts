@@ -1,11 +1,11 @@
 import { Router } from "express";
 import * as authMutationController from "./mutation/auth.mutate.controller";
+import * as authQueryController from "./query/auth.query.controller";
 import { authenticateJWT } from "../../common/utils/jwt.strategy";
 
 const authRouter = Router();
 
 // Mutation Routes
-
 authRouter.post(
   "/applicant-register",
   authMutationController.applicantRegister
@@ -15,8 +15,27 @@ authRouter.post("/applicant-login", authMutationController.applicantLogin);
 authRouter.post("/password/forget", authMutationController.forgetPassword);
 authRouter.post("/password/reset", authMutationController.resetPassword);
 authRouter.post("/logout", authenticateJWT, authMutationController.logout);
+authRouter.post(
+  "/mfa/verify",
+  authenticateJWT,
+  authMutationController.verifyMFASetup
+);
+authRouter.put(
+  "/mfa/revoke",
+  authenticateJWT,
+  authMutationController.revokeMFA
+);
+authRouter.post("/mfa/verify-login", authMutationController.verifyMFAForLogin);
+authRouter.delete("/session/:id", authMutationController.deleteSession);
 
 // Query Routes
-authRouter.get("/refresh", authMutationController.refreshToken);
+authRouter.get("/refresh", authQueryController.refreshToken);
+authRouter.get(
+  "/mfa/setup",
+  authenticateJWT,
+  authQueryController.generateMFASetup
+);
+authRouter.get("/session/all", authQueryController.getAllSession);
+authRouter.get("/session", authQueryController.getSession);
 
 export default authRouter;

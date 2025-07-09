@@ -4,6 +4,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import appConfig from "./configs/app.config";
 import router from "./router";
+import passport from "./middlewares/passport";
 
 const app = express();
 const BASE_URL = appConfig.BASE_URL;
@@ -17,6 +18,7 @@ app.use(
   })
 );
 app.use(cookieParser());
+app.use(passport.initialize());
 
 app.use(BASE_URL, router);
 

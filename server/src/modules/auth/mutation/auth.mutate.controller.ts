@@ -1,7 +1,5 @@
 import {
   clearAuthenticationCookies,
-  getAccessTokenCookieOptions,
-  getRefreshTokenCookieOptions,
   setAuthenticationCookies,
 } from "../../../common/utils/cookies";
 import { asyncHandler } from "../../../middlewares/asyncHandler";
@@ -11,8 +9,10 @@ import {
   registerSchema,
   resetPasswordSchema,
   verificationEmailSchema,
+  verifyMfaForLoginSchema,
+  verifyMfaSchema,
 } from "../auth.validations";
-import * as authService from "./auth.mutate.service";
+import * as authMutationService from "./auth.mutate.service";
 
 const applicantRegister = asyncHandler(async (req, res) => {
   console.log("req.body", req.body);
@@ -23,7 +23,7 @@ const applicantRegister = asyncHandler(async (req, res) => {
   }
 
   const { newUser, verificationCode } =
-    await authService.applicantRegister(data);
+    await authMutationService.applicantRegister(data);
 
   res.status(200).json({
     message: "User registered successfully",
@@ -41,7 +41,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
 
   const code = data.code;
 
-  const { user } = await authService.verifyEmail(code);
+  const { user } = await authMutationService.verifyEmail(code);
 
   res.status(200).json({ message: "Email verified successfully", user: user });
 });
@@ -55,7 +55,7 @@ const applicantLogin = asyncHandler(async (req, res) => {
   }
 
   const { user, accessToken, refreshToken, mfaRequired } =
-    await authService.applicantLogin(data, userAgent || "");
+    await authMutationService.applicantLogin(data, userAgent || "");
 
   if (mfaRequired) {
     return res.status(200).json({
@@ -78,27 +78,6 @@ const applicantLogin = asyncHandler(async (req, res) => {
     });
 });
 
-const refreshToken = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies.refreshToken as string | undefined;
-  if (!refreshToken) {
-    throw new Error("Missing refresh token");
-  }
-
-  const { accessToken, newRefreshToken } =
-    await authService.refreshToken(refreshToken);
-
-  if (newRefreshToken) {
-    res.cookie("refreshToken", newRefreshToken, getRefreshTokenCookieOptions());
-  }
-
-  res
-    .status(200)
-    .cookie("accessToken", accessToken, getAccessTokenCookieOptions())
-    .json({
-      message: "Refresh access token successfully",
-    });
-});
-
 const forgetPassword = asyncHandler(async (req, res) => {
   const { success, data: email } = emailSchema.safeParse(req.body.email);
 
@@ -106,7 +85,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid request" });
   }
 
-  await authService.forgotPassword(email);
+  await authMutationService.forgotPassword(email);
 
   res.status(200).json({
     message: "Password reset email sent",
@@ -122,7 +101,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   const { password, verificationCode } = data;
 
-  await authService.resetPassword(password, verificationCode);
+  await authMutationService.resetPassword(password, verificationCode);
 
   clearAuthenticationCookies(res).status(200).json({
     message: "Reset Password successfully",
@@ -134,19 +113,72 @@ const logout = asyncHandler(async (req, res) => {
   if (!sessionId) {
     throw new Error("Session is invalid.");
   }
-  await authService.logout(sessionId);
+  await authMutationService.logout(sessionId);
 
   clearAuthenticationCookies(res).status(200).json({
     message: "User logout successfully",
   });
 });
 
+const verifyMFASetup = asyncHandler(async (req, res) => {
+  const { code, secretKey } = verifyMfaSchema.parse({
+    ...req.body,
+  });
+  const { userPreferences, message } = await authMutationService.verifyMFASetup(
+    req,
+    code,
+    secretKey
+  );
+  return res.status(200).json({
+    message: message,
+    userPreferences: userPreferences,
+  });
+});
+
+const revokeMFA = asyncHandler(async (req, res) => {
+  const { message, userPreferences } = await authMutationService.revokeMFA(req);
+  return res.status(200).json({
+    message,
+    userPreferences,
+  });
+});
+
+const verifyMFAForLogin = asyncHandler(async (req, res) => {
+  const { code, email, userAgent } = verifyMfaForLoginSchema.parse({
+    ...req.body,
+    userAgent: req.headers["user-agent"],
+  });
+
+  const { accessToken, refreshToken, user } =
+    await authMutationService.verifyMFAForLogin(code, email, userAgent);
+
+  return setAuthenticationCookies({
+    res,
+    accessToken,
+    refreshToken,
+  })
+    .status(200)
+    .json({
+      message: "Verified & login successfully",
+      user,
+    });
+});
+
+const deleteSession = asyncHandler(async (req, res) => {
+  const sessionId = req.params.id;
+  // await authMutationService.deleteSession(sessionId);
+  return res.status(200).json({ message: "Session deleted successfully" });
+});
+
 export {
   applicantRegister,
   verifyEmail,
   applicantLogin,
-  refreshToken,
   forgetPassword,
   resetPassword,
   logout,
+  verifyMFASetup,
+  revokeMFA,
+  verifyMFAForLogin,
+  deleteSession,
 };
