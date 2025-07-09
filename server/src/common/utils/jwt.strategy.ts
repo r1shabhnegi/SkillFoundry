@@ -10,8 +10,8 @@ import { users } from "../../database/schema";
 import { eq } from "drizzle-orm";
 
 interface JwtPayload {
-  userId: string;
-  sessionId: string;
+  user_id: string;
+  session_id: string;
 }
 
 const options: StrategyOptionsWithRequest = {
@@ -39,12 +39,14 @@ export const setupJwtStrategy = (passport: PassportStatic) => {
           const [user] = await db
             .select()
             .from(users)
-            .where(eq(users.user_id, payload.userId))
+            .where(eq(users.user_id, payload.user_id))
             .limit(1);
+
           if (!user) {
             return done(null, false);
           }
-          req.sessionId = payload.sessionId;
+          req.session_id = payload.session_id;
+
           return done(null, user);
         } catch (error) {
           return done(error, false);

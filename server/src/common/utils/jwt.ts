@@ -18,6 +18,8 @@ type SignOptsAndSecret = Omit<SignOptions, "expiresIn"> & {
 export const accessTokenSignOptions: SignOptsAndSecret = {
   expiresIn: appConfig.JWT.EXPIRES_IN,
   secret: appConfig.JWT.SECRET,
+  audience: "user",
+  algorithm: "HS256",
 };
 
 export const refreshTokenSignOptions: SignOptsAndSecret = {

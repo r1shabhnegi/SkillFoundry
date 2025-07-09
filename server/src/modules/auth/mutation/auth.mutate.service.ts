@@ -310,8 +310,8 @@ const resetPassword = async (password: string, verificationCode: string) => {
   };
 };
 
-const logout = async (sessionId: string) => {
-  return await db.delete(sessions).where(eq(sessions.session_id, sessionId));
+const logout = async (session_id: string) => {
+  return await db.delete(sessions).where(eq(sessions.session_id, session_id));
 };
 
 const verifyMFASetup = async (user: User, code: string, secretKey: string) => {

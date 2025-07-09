@@ -109,11 +109,11 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler(async (req, res) => {
-  const sessionId = req.sessionId;
-  if (!sessionId) {
+  const session_id = req.session_id;
+  if (!session_id) {
     throw new Error("Session is invalid.");
   }
-  await authMutationService.logout(sessionId);
+  await authMutationService.logout(session_id);
 
   clearAuthenticationCookies(res).status(200).json({
     message: "User logout successfully",
@@ -165,7 +165,7 @@ const verifyMFAForLogin = asyncHandler(async (req, res) => {
 });
 
 const deleteSession = asyncHandler(async (req, res) => {
-  const sessionId = req.params.id;
+  const session_id = req.params.id;
   // await authMutationService.deleteSession(sessionId);
   return res.status(200).json({ message: "Session deleted successfully" });
 });

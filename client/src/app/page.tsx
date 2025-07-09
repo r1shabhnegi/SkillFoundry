@@ -391,9 +391,9 @@ const JobPortalPage = () => {
               </div>
               <nav className='hidden md:ml-10 md:flex space-x-8'>
                 <a
-                  href='#'
+                  href='/feed'
                   className='text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium'>
-                  Find Jobs
+                  Job Feed
                 </a>
                 <a
                   href='#'
@@ -466,10 +466,12 @@ const JobPortalPage = () => {
                     />
                   </div>
                 </div>
-                <button className='bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center'>
+                <a
+                  href='/feed'
+                  className='bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center'>
                   Search Jobs
                   <ArrowRight className='ml-2 h-5 w-5' />
-                </button>
+                </a>
               </div>
             </div>
 
@@ -1470,12 +1472,16 @@ const JobPortalPage = () => {
             match
           </p>
           <div className='flex flex-col sm:flex-row gap-4 justify-center'>
-            <button className='bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors'>
+            <a
+              href='/feed'
+              className='bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-center'>
               Get Started - It's Free
-            </button>
-            <button className='border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors'>
+            </a>
+            <a
+              href='/feed'
+              className='border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors text-center'>
               Browse Jobs
-            </button>
+            </a>
           </div>
         </div>
       </section>

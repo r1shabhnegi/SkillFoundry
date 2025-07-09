@@ -12,7 +12,7 @@ authRouter.post(
 );
 authRouter.post("/verify-email", authMutationController.verifyEmail);
 authRouter.post("/applicant-login", authMutationController.applicantLogin);
-authRouter.post("/password/forget", authMutationController.forgetPassword);
+authRouter.post("/password/forgot", authMutationController.forgetPassword);
 authRouter.post("/password/reset", authMutationController.resetPassword);
 authRouter.post("/logout", authenticateJWT, authMutationController.logout);
 authRouter.post(
@@ -26,7 +26,11 @@ authRouter.put(
   authMutationController.revokeMFA
 );
 authRouter.post("/mfa/verify-login", authMutationController.verifyMFAForLogin);
-authRouter.delete("/session/:id", authMutationController.deleteSession);
+authRouter.delete(
+  "/session/:id",
+  authenticateJWT,
+  authMutationController.deleteSession
+);
 
 // Query Routes
 authRouter.get("/refresh", authQueryController.refreshToken);
@@ -35,7 +39,11 @@ authRouter.get(
   authenticateJWT,
   authQueryController.generateMFASetup
 );
-authRouter.get("/session/all", authQueryController.getAllSession);
-authRouter.get("/session", authQueryController.getSession);
+authRouter.get(
+  "/session/all",
+  authenticateJWT,
+  authQueryController.getAllSession
+);
+authRouter.get("/session", authenticateJWT, authQueryController.getSession);
 
 export default authRouter;

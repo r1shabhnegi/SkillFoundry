@@ -39,15 +39,6 @@ export type mfaType = {
   qrImageUrl: string;
 };
 
-// export const verifyEmailMutationFn = async (data: verifyEmailType) =>
-//   await API.post(`/auth/verify/email`, data);
-
-// export const forgotPasswordMutationFn = async (data: forgotPasswordType) =>
-//   await API.post(`/auth/password/forgot`, data);
-
-// export const resetPasswordMutationFn = async (data: resetPasswordType) =>
-//   await API.post(`/auth/password/reset`, data);
-
 // export const verifyMFALoginMutationFn = async (data: mfaLoginType) =>
 //   await API.post(`/mfa/verify-login`, data);
 

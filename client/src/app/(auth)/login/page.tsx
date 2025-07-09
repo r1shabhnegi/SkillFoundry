@@ -21,6 +21,9 @@ import {
   LockKeyIcon,
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
+import { loginMutationFn } from "@/lib/api/auth.apis";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -32,10 +35,9 @@ type FormData = z.infer<typeof formSchema>;
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
+  const router = useRouter();
   const { mutate: login, isPending } = useMutation({
-    mutationFn: 
+    mutationFn: loginMutationFn,
   });
 
   const form = useForm<FormData>({
@@ -48,13 +50,16 @@ const Login = () => {
   });
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("Login data:", data);
-    setIsLoading(false);
-    // Handle login logic here
-  }
+    login(data, {
+      onSuccess: () => {
+        toast.success("Login successful");
+        router.push("/home");
+      },
+      onError: (error) => {
+        toast.error(error.message || "Something went wrong");
+      },
+    });
+  };
 
   const handleGoogleSignIn = () => {
     console.log("Google sign in clicked");
@@ -125,7 +130,9 @@ const Login = () => {
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className='space-y-4'>
               <FormField
                 control={form.control}
                 name='email'
@@ -183,7 +190,7 @@ const Login = () => {
                   )}
                 />
                 <Link
-                  href='/forgot-password'
+                  href={`/forgot-password?email=${form.getValues().email}`}
                   className='text-sm text-blue-600 hover:text-blue-500 font-medium'>
                   Forgot password?
                 </Link>
@@ -192,7 +199,7 @@ const Login = () => {
               {/* Submit Button */}
               <AuthSubmitBtn
                 form={form}
-                isLoading={isLoading}
+                isLoading={isPending}
                 btnText='Sign In'
               />
             </form>

@@ -128,12 +128,14 @@ const getSessionById = async (sessionId: string) => {
     .from(sessions)
     .where(eq(sessions.session_id, sessionId));
 
-  if (!session) {
+  if (session.length === 0) {
     throw new Error("Session not found");
   }
 
+  const { user_id: user } = session[0];
+
   return {
-    session,
+    user,
   };
 };
 

@@ -39,14 +39,14 @@ const generateMFASetup = asyncHandler(async (req, res) => {
 });
 
 const getAllSession = asyncHandler(async (req, res) => {
-  const userId = req.user?.user_id as User["user_id"];
-  const sessionId = req.sessionId;
+  const userId = req.user?.user_id;
+  const session_id = req.session_id;
 
   const { sessionData } = await authQueryService.getAllSession(userId);
 
   const modifySessions = sessionData.map((session) => ({
     ...session,
-    ...(session.session_id === sessionId && {
+    ...(session.session_id === session_id && {
       isCurrent: true,
     }),
   }));
@@ -58,17 +58,17 @@ const getAllSession = asyncHandler(async (req, res) => {
 });
 
 const getSession = asyncHandler(async (req, res) => {
-  const sessionId = req?.sessionId;
+  const session_id = req?.session_id;
 
-  if (!sessionId) {
+  if (!session_id) {
     throw new Error("Session ID not found. Please log in.");
   }
 
-  const { session } = await authQueryService.getSessionById(sessionId);
+  const { user } = await authQueryService.getSessionById(session_id);
 
   return res.status(200).json({
     message: "Session retrieved successfully",
-    session,
+    user,
   });
 });
 
